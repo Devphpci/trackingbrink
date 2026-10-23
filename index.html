@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sichere Sendungsverfolgung - BRINK’S Logistics</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#eff6ff', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col justify-between">
+
+    <!-- Kopfzeile -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20">
+                    📦
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-slate-900 text-base leading-tight">BRINK’S</h1>
+                    <span class="text-xs text-slate-500 font-medium">Sicheres Sendungsverfolgungssystem</span>
+                </div>
+            </div>
+            <div id="header-action">
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-12 w-full flex-grow flex flex-col justify-center">
+
+        <div id="search-section" class="max-w-md mx-auto w-full bg-white p-8 rounded-3xl border border-slate-200 shadow-xl shadow-slate-100 text-center transition-all duration-500">
+            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4 shadow-inner">
+                🔍
+            </div>
+            <h2 class="text-2xl font-black text-slate-900 tracking-tight">Sendung verfolgen</h2>
+            <p class="text-xs text-slate-500 mt-1 mb-6">Geben Sie Ihre Sendungsnummer ein, um Echtzeit-Details abzurufen.</p>
+            
+            <form id="tracking-form" onsubmit="handleSearch(event)" class="space-y-4">
+                <div class="relative">
+                    <input type="text" id="search-input" placeholder="Bsp: GE-9048-FRA-VIE" required
+                        class="w-full pl-4 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-bold text-slate-900 placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all uppercase">
+                </div>
+                
+                <div id="error-msg" class="text-xs font-semibold text-rose-500 hidden bg-rose-50 p-2.5 rounded-lg border border-rose-100">
+                    Sendungsnummer nicht gefunden. Bitte überprüfen Sie Ihre Eingabe.
+                </div>
+
+                <button type="submit" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-[0.98]">
+                    Sendung suchen
+                </button>
+            </form>
+
+            
+        </div>
+
+        <div id="dashboard-section" class="space-y-6 hidden opacity-0 transition-opacity duration-700">
+
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <button onclick="resetSearch()" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors text-xs font-bold flex items-center gap-1.5">
+                        &larr; Zurück
+                    </button>
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Aktive Sendung</span>
+                        <span id="dashboard-tracking-id" class="font-mono font-bold text-slate-800 text-sm">--</span>
+                    </div>
+                </div>
+                <div id="badge-statut" class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200 animate-pulse">
+                    Wird überprüft...
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-6 border-b border-slate-100">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Transportunternehmen</span>
+                        <h2 id="carrier-name" class="text-lg font-extrabold text-slate-900 mt-0.5">--</h2>
+                    </div>
+                    <div class="text-left md:text-right">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Wert / Enthalterner Betrag</span>
+                        <p id="package-amount" class="text-lg font-extrabold text-emerald-600">-- €</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-100 mb-6">
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 font-bold">🛫</div>
+                        <div>
+                            <span class="text-xs font-bold text-slate-400 uppercase">Absender / Herkunft</span>
+                            <p id="origin-text" class="font-bold text-slate-800 text-sm mt-0.5">--</p>
+                            <p id="departure-time-text" class="text-xs text-slate-500 mt-0.5">--</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 font-bold">🎯</div>
+                        <div>
+                            <span class="text-xs font-bold text-slate-400 uppercase">Empfänger & Adresse</span>
+                            <p id="recipient-name" class="font-bold text-slate-800 text-sm mt-0.5">--</p>
+                            <p id="recipient-address" class="text-xs text-slate-500 mt-0.5 leading-relaxed">--</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-2 mb-2">
+                    <div class="flex justify-between text-xs font-bold">
+                        <span id="progress-label" class="text-blue-600">Transportfortschritt</span>
+                        <span id="progress-percent" class="text-slate-600 font-mono">0%</span>
+                    </div>
+                    <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200">
+                        <div id="progress-bar" class="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-1000 ease-out" style="width: 0%;"></div>
+                    </div>
+                    <div class="flex justify-between text-[11px] text-slate-400 font-medium pt-1">
+                        <span id="dep-info">Abfahrt: Heute um 23:00 Uhr</span>
+                        <span id="deadline-info" class="text-rose-500 font-semibold hidden">Stornierungslimit: So. 16:52</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                <h3 class="text-sm font-black uppercase tracking-wider text-slate-400 mb-6">Transportetappen</h3>
+                <div id="timeline-container" class="space-y-6 relative before:absolute before:top-2 before:bottom-2 before:left-[17px] before:w-0.5 before:bg-slate-100">
+                </div>
+            </div>
+
+            <div id="countdown-card" class="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-5 rounded-2xl shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl">⏳</div>
+                    <div>
+                        <h4 class="text-sm font-bold">Zeit bis zur automatischen Stornierung</h4>
+                        <p class="text-xs text-slate-400">Falls bis Sonntag 16:52 Uhr nicht empfangen oder beansprucht</p>
+                    </div>
+                </div>
+                <div id="countdown-timer" class="font-mono font-extrabold text-lg bg-white/10 px-4 py-2 rounded-xl border border-white/10">
+                    --:--:--
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <footer class="text-center py-6 text-xs text-slate-400 border-t border-slate-200 mt-8">
+        &copy; 2026 BRINK’S &bull; Internationale Logistik- und Datensicherheit.
+    </footer>
+
+    <script>
+
+        const parcelsDatabase = {
+            "GE-9048-FRA-VIE": {
+                "trackingNumber": "GE-9048-FRA-VIE",
+                "entreprise": "BRINK’S Internationale Logistik",
+                "montantInitial": 284000.00,
+                "devise": "€",
+                "origine": "FRANKFURT (Deutschland)",
+                "destination": "ÖSTERREICH (Wien / Ebersdorf)",
+                "departureTime": "2026-10-23T23:00:00", 
+                "deadlineTime": "2026-10-25T16:52:00",    
+                "recipient": {
+                    "name": "Mme Lydia Reinhart",
+                    "address": "Ebersdorf 130a Tür 2, 8273 Ebersdorf, Österreich (Austria)"
+                },
+                "steps": [
+                    {
+                        "title": "Sendung übernommen",
+                        "location": "Logistikzentrum Frankfurt, Deutschland",
+                        "time": "23. Oktober - 21:00",
+                        "weight": 1.4
+                    },
+                    {
+                        "title": "Abfahrt vom Hauptlager",
+                        "location": "Umschlagplatz Frankfurt Hub",
+                        "time": "23. Oktober - 23:00 (Abfahrt)",
+                        "weight": 25.0
+                    },
+                    {
+                        "title": "Internationaler Autobahntransport",
+                        "location": "Grenzübergang Deutschland / Österreich",
+                        "time": "24. Oktober (Geplant)",
+                        "weight": 50.0
+                    },
+                    {
+                        "title": "Österreichisches Regionales Frachtzentrum",
+                        "location": "Regionaler Hub Steiermark / Wien",
+                        "time": "25. Oktober morgens (Geplant)",
+                        "weight": 80.0
+                    },
+                    {
+                        "title": "Endzustellung an den Empfänger",
+                        "location": "Ebersdorf 130a Tür 2",
+                        "time": "Vor Sonntag 16:52",
+                        "weight": 100.0
+                    }
+                ]
+            }
+        };
+
+        let activeTimer = null;
+        let currentParcel = null;
+
+
+
+        function handleSearch(event) {
+            event.preventDefault();
+            const codeInput = document.getElementById('search-input').value.trim().toUpperCase();
+            const errorMsg = document.getElementById('error-msg');
+
+            if (parcelsDatabase[codeInput]) {
+                errorMsg.classList.add('hidden');
+                currentParcel = parcelsDatabase[codeInput];
+                launchDashboard();
+            } else {
+                errorMsg.classList.remove('hidden');
+            }
+        }
+
+        function launchDashboard() {
+            const searchSection = document.getElementById('search-section');
+            const dashboardSection = document.getElementById('dashboard-section');
+
+            searchSection.style.opacity = '0';
+            searchSection.style.transform = 'scale(0.95)';
+            
+            setTimeout(() => {
+                searchSection.classList.add('hidden');
+                dashboardSection.classList.remove('hidden');
+                setTimeout(() => {
+                    dashboardSection.classList.remove('opacity-0');
+                }, 50);
+            }, 300);
+
+            document.getElementById('dashboard-tracking-id').textContent = currentParcel.trackingNumber;
+            document.getElementById('carrier-name').textContent = currentParcel.entreprise;
+            document.getElementById('package-amount').textContent = currentParcel.montantInitial.toFixed(2).replace('.', ',') + ' ' + currentParcel.devise;
+            document.getElementById('origin-text').textContent = currentParcel.origine;
+            document.getElementById('departure-time-text').textContent = "Geplante Abfahrt: Heute um 23:00 Uhr";
+            document.getElementById('recipient-name').textContent = currentParcel.recipient.name;
+            document.getElementById('recipient-address').textContent = currentParcel.recipient.address;
+
+            updateDynamicState();
+            if (activeTimer) clearInterval(activeTimer);
+            activeTimer = setInterval(updateDynamicState, 1000);
+        }
+
+        function resetSearch() {
+            if (activeTimer) clearInterval(activeTimer);
+            const searchSection = document.getElementById('search-section');
+            const dashboardSection = document.getElementById('dashboard-section');
+
+            dashboardSection.classList.add('opacity-0');
+            setTimeout(() => {
+                dashboardSection.classList.add('hidden');
+                searchSection.classList.remove('hidden');
+                searchSection.style.opacity = '1';
+                searchSection.style.transform = 'scale(1)';
+                document.getElementById('search-input').value = '';
+            }, 300);
+        }
+
+        function updateDynamicState() {
+            if (!currentParcel) return;
+
+            const now = new Date();
+            const departure = new Date(currentParcel.departureTime);
+            const deadline = new Date(currentParcel.deadlineTime);
+
+            const totalDuration = deadline - departure;
+            const elapsed = now - departure;
+
+            let percentage = (elapsed / totalDuration) * 100;
+            
+            const badge = document.getElementById('badge-statut');
+            const progressBar = document.getElementById('progress-bar');
+            const progressPercent = document.getElementById('progress-percent');
+            const progressLabel = document.getElementById('progress-label');
+            const countdownCard = document.getElementById('countdown-card');
+            const countdownTimer = document.getElementById('countdown-timer');
+            const deadlineInfo = document.getElementById('deadline-info');
+
+
+            if (now >= deadline) {
+                percentage = 100;
+                progressBar.style.width = '100%';
+                progressBar.className = 'h-full bg-rose-500 rounded-full transition-all duration-1000';
+                progressPercent.textContent = '100%';
+                progressLabel.textContent = 'Status: Storniert / Abgelaufen';
+                progressLabel.className = 'text-rose-600 font-bold';
+
+                badge.textContent = 'STORNIERT / ABGELAUFEN';
+                badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 border border-rose-200';
+                
+                countdownCard.className = 'bg-gradient-to-r from-rose-900 to-red-950 text-white p-5 rounded-2xl shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4';
+                countdownTimer.textContent = 'Frist überschritten (Paket storniert)';
+                
+                deadlineInfo.classList.remove('hidden');
+
+                renderTimeline(currentParcel.steps.length, true);
+                return;
+            }
+
+            deadlineInfo.classList.add('hidden');
+
+            if (now < departure) {
+                percentage = 0;
+                badge.textContent = 'Wartet auf Abfahrt';
+                badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200';
+                progressLabel.textContent = 'Wartet auf Abfahrt heute um 23:00 Uhr';
+                renderTimeline(0, false);
+            } else {
+                badge.textContent = 'Aktiv im Transport';
+                badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200 animate-pulse';
+                progressLabel.textContent = 'Weiterleitung nach Österreich läuft';
+                
+                let activeStepIndex = currentParcel.steps.findIndex(step => percentage <= step.weight);
+                if (activeStepIndex === -1) activeStepIndex = currentParcel.steps.length - 1;
+                renderTimeline(activeStepIndex, false);
+            }
+
+            const displayPercent = Math.min(Math.max(percentage, 0), 100).toFixed(1);
+            progressBar.style.width = displayPercent + '%';
+            progressPercent.textContent = displayPercent + '%';
+
+            const timeLeft = deadline - now;
+            const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+            countdownTimer.textContent = `${String(hours).padStart(2, '0')}Std. ${String(minutes).padStart(2, '0')}Min. ${String(seconds).padStart(2, '0')}Sek.`;
+        }
+
+        function renderTimeline(activeIndex, isCancelled) {
+            const container = document.getElementById('timeline-container');
+            container.innerHTML = '';
+
+            currentParcel.steps.forEach((step, index) => {
+                let isCompleted = index < activeIndex;
+                let isActive = index === activeIndex;
+
+                let circleClass = "w-4 h-4 rounded-full border-2 bg-white flex items-center justify-center relative z-10 transition-all ";
+                let textClass = "text-slate-400";
+
+                if (isCancelled) {
+                    circleClass += "border-rose-400 bg-rose-50";
+                    textClass = "text-slate-400 line-through";
+                } else if (isCompleted) {
+                    circleClass += "border-emerald-500 bg-emerald-500 text-white";
+                    textClass = "text-slate-700 font-medium";
+                } else if (isActive) {
+                    circleClass += "border-blue-600 bg-blue-600 ring-4 ring-blue-100";
+                    textClass = "text-slate-900 font-bold";
+                } else {
+                    circleClass += "border-slate-300 bg-white";
+                }
+
+                const html = `
+                    <div class="flex items-start gap-4 relative">
+                        <div class="${circleClass}">
+                            ${isCompleted ? '<span class="text-[10px] font-bold">✓</span>' : ''}
+                            ${isActive ? '<span class="w-1.5 h-1.5 bg-white rounded-full animate-ping"></span>' : ''}
+                        </div>
+                        <div class="flex-grow pb-4 border-b border-slate-100 last:border-0">
+                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                                <h4 class="text-sm ${textClass}">${step.title}</h4>
+                                <span class="text-xs font-mono text-slate-400">${step.time}</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">${step.location}</p>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+        }
+    </script>
+</body>
+</html>
